@@ -1,0 +1,8 @@
+[project]
+name = "no-guess-minesweeper"
+version = "0.1.0"
+description = "A reveal-only, no-guess Minesweeper environment for LLM agents"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["."]
