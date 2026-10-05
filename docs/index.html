@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Failing Gracefully explores reinforcement-learning agents that can solve, abstain, or stop safely under uncertainty."
+    />
+    <meta name="theme-color" content="#f5f1e8" />
+    <title>Failing Gracefully</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Failing Gracefully home">
+        <span class="brand-mark" aria-hidden="true">FG</span>
+        <span>Failing Gracefully</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#experiments">Experiments</a>
+        <a href="#resources">Resources</a>
+        <a
+          class="nav-github"
+          href="https://github.com/Zanette-Labs/failing-gracefully"
+        >GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <p class="eyebrow">Reliability under uncertainty</p>
+          <h1>Train agents to know when <em>not</em> to guess.</h1>
+          <p class="hero-lede">
+            Failing Gracefully studies reinforcement-learning agents that can
+            solve, abstain, or stop safely when uncertainty wins.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#experiments">
+              Explore experiments
+            </a>
+            <a
+              class="button button-secondary"
+              href="https://github.com/Zanette-Labs/failing-gracefully"
+            >View source <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+
+        <div class="outcome-card" aria-label="Three possible agent outcomes">
+          <div class="outcome-heading">
+            <span>Agent outcome</span>
+            <span class="live-dot">training signal</span>
+          </div>
+          <div class="outcome-row success">
+            <span class="outcome-icon" aria-hidden="true">✓</span>
+            <div>
+              <strong>Solve</strong>
+              <span>Confident and correct</span>
+            </div>
+            <code>1.0</code>
+          </div>
+          <div class="outcome-row graceful">
+            <span class="outcome-icon" aria-hidden="true">~</span>
+            <div>
+              <strong>Graceful stop</strong>
+              <span>Recognize uncertainty</span>
+            </div>
+            <code>c</code>
+          </div>
+          <div class="outcome-row failure">
+            <span class="outcome-icon" aria-hidden="true">×</span>
+            <div>
+              <strong>Harmful failure</strong>
+              <span>Confident but wrong</span>
+            </div>
+            <code>0.0</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="project-strip" aria-label="Project summary">
+        <div><strong>3</strong><span>experiment suites</span></div>
+        <div><strong>2</strong><span>model collections</span></div>
+        <div><strong>Open</strong><span>training recipes</span></div>
+      </section>
+
+      <section class="section experiments" id="experiments">
+        <div class="section-heading">
+          <p class="eyebrow">From control to language</p>
+          <h2>One idea, three testbeds.</h2>
+          <p>
+            Each suite includes focused setup, training, and evaluation
+            instructions in its own directory.
+          </p>
+        </div>
+
+        <div class="experiment-grid">
+          <article class="experiment-card maze-card">
+            <div class="card-topline">
+              <span class="card-number">01</span>
+              <span class="card-tag">Control</span>
+            </div>
+            <div class="maze-art" aria-hidden="true">
+              <span class="maze-agent"></span>
+              <span class="maze-goal"></span>
+            </div>
+            <h3>Safe Maze</h3>
+            <p>
+              A compact environment for comparing GracefulRL with RLOO, GRPO,
+              DPG, and online reward tuning.
+            </p>
+            <a href="https://github.com/Zanette-Labs/failing-gracefully/tree/main/safe_maze">
+              Open experiment <span aria-hidden="true">→</span>
+            </a>
+          </article>
+
+          <article class="experiment-card math-card">
+            <div class="card-topline">
+              <span class="card-number">02</span>
+              <span class="card-tag">Reasoning</span>
+            </div>
+            <div class="math-art" aria-hidden="true">
+              <span>?</span><span>∑</span><span>✓</span>
+            </div>
+            <h3>LLM Math</h3>
+            <p>
+              Train Qwen3 1.7B and 4B models with Brier, IDK, and reward-tuning
+              objectives on mathematical reasoning tasks.
+            </p>
+            <div class="card-links">
+              <a href="https://github.com/Zanette-Labs/failing-gracefully/tree/main/llm_math">
+                Open experiment <span aria-hidden="true">→</span>
+              </a>
+              <a href="https://huggingface.co/collections/daman1209arora/graceful-failure-llm">
+                🤗 Models <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </article>
+
+          <article class="experiment-card mines-card">
+            <div class="card-topline">
+              <span class="card-number">03</span>
+              <span class="card-tag">Planning</span>
+            </div>
+            <div class="mines-art" aria-hidden="true">
+              <span>1</span><span>2</span><span class="mine">●</span>
+              <span>1</span><span class="flag">⚑</span><span>2</span>
+            </div>
+            <h3>Minesweeper</h3>
+            <p>
+              Evaluate graceful failure in an 8-turn, 6×6 Minesweeper task
+              using Qwen3-4B and multiple grace-reward settings.
+            </p>
+            <div class="card-links">
+              <a href="https://github.com/Zanette-Labs/failing-gracefully/tree/main/minesweeper">
+                Open experiment <span aria-hidden="true">→</span>
+              </a>
+              <a href="https://huggingface.co/collections/daman1209arora/graceful-failure-minesweeper">
+                🤗 Models <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section principle">
+        <div class="principle-copy">
+          <p class="eyebrow">The core question</p>
+          <h2>Can failure become an intentional action?</h2>
+        </div>
+        <p>
+          Standard objectives reward success and penalize everything else.
+          Graceful failure adds a useful middle ground: when an agent cannot
+          reliably succeed, stopping can be better than making a costly guess.
+        </p>
+      </section>
+
+      <section class="section resources" id="resources">
+        <div>
+          <p class="eyebrow">Run it yourself</p>
+          <h2>Reproduce the experiments.</h2>
+          <p>
+            Start with the repository overview, then follow the guide inside
+            the experiment suite you want to run.
+          </p>
+        </div>
+        <a
+          class="button button-light"
+          href="https://github.com/Zanette-Labs/failing-gracefully#readme"
+        >Read the documentation <span aria-hidden="true">↗</span></a>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand footer-brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">FG</span>
+        <span>Failing Gracefully</span>
+      </a>
+      <p>Research code from Zanette Labs.</p>
+      <a href="https://github.com/Zanette-Labs/failing-gracefully">
+        GitHub <span aria-hidden="true">↗</span>
+      </a>
+    </footer>
+  </body>
+</html>
