@@ -7,3 +7,5 @@ installation, data preparation, training, and evaluation instructions:
 - [Safe Maze](safe_maze/README.md)
 - [LLM Math](llm_math/README.md)
 - [Minesweeper](minesweeper/README.md)
+
+Project website: [zanette-labs.github.io/failing-gracefully](https://zanette-labs.github.io/failing-gracefully/)
