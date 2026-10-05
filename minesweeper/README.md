@@ -183,18 +183,14 @@ bash "$MINESWEEPER_RUN_ROOT/container.sh" python3 \
 
 The four inference-ready checkpoints are collected at
 [Graceful Failure: Minesweeper](https://huggingface.co/collections/daman1209arora/graceful-failure-minesweeper).
-Repository names intentionally omit the checkpoint step:
+The collection contains one model for each grace reward:
 
-| Grace reward | Training updates | Hugging Face model |
-| ---: | ---: | --- |
-| `0` | 249 | [`daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0`](https://huggingface.co/daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0) |
-| `0.25` | 240 | [`daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.25`](https://huggingface.co/daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.25) |
-| `0.5` | 243 | [`daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.5`](https://huggingface.co/daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.5) |
-| `0.75` | 240 | [`daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.75`](https://huggingface.co/daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.75) |
-
-The update counts record the exact source checkpoints and are not part of the
-public repository names. New training runs made with this release use 250
-updates and checkpoint once after the final update.
+| Grace reward | Hugging Face model |
+| ---: | --- |
+| `0` | [`daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0`](https://huggingface.co/daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0) |
+| `0.25` | [`daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.25`](https://huggingface.co/daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.25) |
+| `0.5` | [`daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.5`](https://huggingface.co/daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.5) |
+| `0.75` | [`daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.75`](https://huggingface.co/daman1209arora/Qwen3-4B-Minesweeper-GracefulRL-Grace0.75) |
 
 ### Download and evaluate a released checkpoint
 
@@ -220,7 +216,6 @@ bash "$MINESWEEPER_RUN_ROOT/container.sh" python3 \
   --model "$MODEL_DIR" \
   --label gracefulrl-grace0.5 \
   --grace 0.5 \
-  --training-updates 243 \
   --puzzles 10 \
   --gpus 0,1 \
   --output "$MINESWEEPER_RUN_ROOT/work/evaluations/gracefulrl-grace0.5-smoke.jsonl"
@@ -254,7 +249,6 @@ bash "$MINESWEEPER_RUN_ROOT/container.sh" python3 \
   --model "$MINESWEEPER_RUN_ROOT/work/hf_models/RUN" \
   --label gracefulrl-grace0.5 \
   --grace 0.5 \
-  --training-updates 250 \
   --gpus 0,1 \
   --output "$MINESWEEPER_RUN_ROOT/work/evaluations/gracefulrl-grace0.5.jsonl"
 ```

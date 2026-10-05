@@ -35,7 +35,6 @@ bash "$MINESWEEPER_RUN_ROOT/container.sh" python3 \
   --model "$MINESWEEPER_RUN_ROOT/work/hf_models/RUN" \
   --label gracefulrl-grace0.5 \
   --grace 0.5 \
-  --training-updates 250 \
   --gpus 0,1 \
   --output "$MINESWEEPER_RUN_ROOT/work/evaluations/gracefulrl-grace0.5.jsonl"
 ```
@@ -50,5 +49,5 @@ is still required locally for its tokenizer.
 
 Released checkpoints can be downloaded from the
 [Graceful Failure: Minesweeper collection](https://huggingface.co/collections/daman1209arora/graceful-failure-minesweeper).
-The release-root README lists the four model IDs, their grace values, their
-exact source update counts, and a complete download-plus-evaluation example.
+The release-root README lists the four model IDs, their grace values, and a
+complete download-plus-evaluation example.
