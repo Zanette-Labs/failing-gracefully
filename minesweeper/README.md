@@ -79,18 +79,6 @@ MINESWEEPER_RUN_ROOT="/tmp/$(id -un)-ms-rloo-g025" \
 ADVANTAGE_ESTIMATOR=rloo GRACEFUL_REWARD=0.25 bash run.sh 72
 ```
 
-To check the complete setup, rollout, reward, optimizer, evaluation, and
-checkpoint path with one small update, use:
-
-```bash
-MINESWEEPER_RUN_ROOT="/tmp/$(id -un)-minesweeper-smoke" \
-MINESWEEPER_SMOKE_TEST=1 WANDB_MODE=offline bash run.sh 72
-```
-
-The smoke mode uses the same eight-GPU model/runtime path as the full run, but
-only eight training puzzles, two held-out puzzles, two samples per prompt,
-two-turn episodes, and one optimizer update.
-
 Use a distinct `MINESWEEPER_RUN_ROOT` for every configuration. A run consumes
 all eight GPUs, and the launcher permits only one active job per run root.
 
@@ -103,7 +91,6 @@ all eight GPUs, and the launcher permits only one active job per run root.
 | `GRACEFULRL_EPS` | `0` | GracefulRL rank-smoothing epsilon; used only by GracefulRL and must be nonnegative. |
 | `MINESWEEPER_RUN_ROOT` | `/tmp/$USER-minesweeper` | Runtime, model, data, log, and checkpoint root. |
 | `WANDB_MODE` | automatic | Defaults to `offline` when no W&B credentials are found. |
-| `MINESWEEPER_SMOKE_TEST` | `0` | Set to `1` for the one-update end-to-end smoke test. |
 
 The exact model, optimizer, rollout, and GPU settings are in
 [`runtime/training.sh`](runtime/training.sh). The fixed experiment uses:
@@ -207,39 +194,6 @@ bash "$MINESWEEPER_RUN_ROOT/container.sh" python3 -c \
   'import sys; from huggingface_hub import snapshot_download; snapshot_download(sys.argv[1], local_dir=sys.argv[2])' \
   "$MODEL_REPO" "$MODEL_DIR"
 ```
-
-Run a 10-puzzle smoke evaluation on two GPUs:
-
-```bash
-bash "$MINESWEEPER_RUN_ROOT/container.sh" python3 \
-  "$MINESWEEPER_RUN_ROOT/repo/eval/run_eval.py" \
-  --model "$MODEL_DIR" \
-  --label gracefulrl-grace0.5 \
-  --grace 0.5 \
-  --puzzles 10 \
-  --gpus 0,1 \
-  --output "$MINESWEEPER_RUN_ROOT/work/evaluations/gracefulrl-grace0.5-smoke.jsonl"
-```
-
-As a release sanity check, all four uploaded checkpoints were evaluated on the
-first 10 fixed held-out puzzles with the command above (sampling seed `72`).
-These tiny-sample results verify that the checkpoints load and complete the
-full evaluation path; they are not statistically meaningful benchmark scores:
-
-| Grace reward | Success | Safe turn limit | Terminal error | Mean training reward |
-| ---: | ---: | ---: | ---: | ---: |
-| `0` | 6/10 | 2/10 | 2/10 | `0.600` |
-| `0.25` | 5/10 | 1/10 | 4/10 | `0.525` |
-| `0.5` | 8/10 | 1/10 | 1/10 | `0.850` |
-| `0.75` | 8/10 | 1/10 | 1/10 | `0.875` |
-
-Each run passed the evaluator's trajectory replay audit. Use the complete
-500-puzzle evaluation below for reportable results.
-
-For the fixed 500-puzzle evaluation, omit `--puzzles 10`. Use a different
-output path for each checkpoint. The evaluator resumes an interrupted JSONL;
-pass `--overwrite` to intentionally replace it. It writes full trajectories,
-an audited `*.summary.json`, a `*.manifest.json`, and an SGLang server log.
 
 Run the fixed 500-puzzle transfer evaluation with:
 

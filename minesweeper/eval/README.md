@@ -43,9 +43,9 @@ Stop training before evaluation so the requested GPUs are free. An interrupted
 evaluation resumes from the completed puzzle indices in the output JSONL. Use
 `--overwrite` to deliberately start that output path again from scratch.
 
-For a quick end-to-end smoke test, add `--puzzles 10`. To use an already
-running native SGLang server, pass `--server-url http://HOST:PORT`; `--model`
-is still required locally for its tokenizer.
+To use an already running native SGLang server, pass
+`--server-url http://HOST:PORT`; `--model` is still required locally for its
+tokenizer.
 
 Released checkpoints can be downloaded from the
 [Graceful Failure: Minesweeper collection](https://huggingface.co/collections/daman1209arora/graceful-failure-minesweeper).
