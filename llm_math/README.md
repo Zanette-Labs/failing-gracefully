@@ -6,9 +6,14 @@ Qwen3-4B on mathematical reasoning with three reliability recipes:
 - **Brier** trains calibrated answer confidence with a Brier-score reward and
   RLOO advantages.
 - **IDK** teaches the model to emit an explicit “I don't know” response and uses
-  the GracefulRL advantage estimator (named `tailrl` internally in this code).
+  the GracefulRL advantage estimator.
 - **Reward tuning** adjusts the reward for abstention online and uses RLOO
   advantages.
+
+## Trained checkpoints
+
+Trained Hugging Face checkpoints for the Brier and IDK recipes are available in
+the [Graceful Failure LLM collection](https://huggingface.co/collections/daman1209arora/graceful-failure-llm).
 
 Run all commands below from this `llm_math/` directory. The launchers expect a
 working CUDA/Slurm environment with the dependencies required by the included
@@ -129,7 +134,7 @@ export CHECKPOINT_DIR=/path/to/checkpoints
 ./scripts/run_idk_train_4B_orchard.sh reward_tuning
 ```
 
-The 4B IDK recipe uses reward level `0.0`; reward tuning uses levels `0.0`,
+The 4B IDK and reward-tuning recipes both train jointly on reward levels `0.0`,
 `0.2`, `0.4`, `0.6`, and `0.8`. The launcher accepts `--lr <value>` and
 `--advantage <name>` overrides.
 

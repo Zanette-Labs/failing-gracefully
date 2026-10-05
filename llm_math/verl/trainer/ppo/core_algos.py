@@ -137,7 +137,7 @@ class AdvantageEstimator(str, Enum):
     CLIPPED_P_NORMALIZATION = "clipped_pnorm"
     CROSS_FITTED_MACLAURIN = "cross_fitted_maclaurin"
     OVERSAMPLE_SUBSET_VR_WEIGHTS = "oversample_subset_vr"
-    TAILRL = "tailrl"
+    GRACEFULRL = "gracefulrl"
 
 
 class AdaptiveKLController:
@@ -493,8 +493,8 @@ def compute_maxrl_smoothed_outcome_advantage(
     return scores, scores
 
 
-@register_adv_est(AdvantageEstimator.TAILRL)
-def compute_tailrl_outcome_advantage(
+@register_adv_est(AdvantageEstimator.GRACEFULRL)
+def compute_gracefulrl_outcome_advantage(
     token_level_rewards: torch.Tensor,
     response_mask: torch.Tensor,
     index: np.ndarray,
@@ -503,7 +503,7 @@ def compute_tailrl_outcome_advantage(
     eps: float = 1
 ):
     '''
-    TailRL advantage: sort rewards descending, then
+    GracefulRL advantage: sort rewards descending, then
     a_(i) = sum_{j=i}^{N} [R(j) - R(j+1)] / j   (R(n+1) = 0),
     centered by group mean.
     '''

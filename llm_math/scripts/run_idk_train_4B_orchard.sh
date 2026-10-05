@@ -33,7 +33,8 @@ if [ "$CMD" = "normal" ]; then
   EXPERIMENT_SUFFIX=normal
   LR=1e-6
 elif [ "$CMD" = "idk" ]; then
-  IDK_C_VALUES=(0.0)
+  # To train IDK on one reward level, use a single-element array, e.g. IDK_C_VALUES=(0.4).
+  IDK_C_VALUES=(0.0 0.2 0.4 0.6 0.8)
   _train_list=""
   _val_list=""
   for c in "${IDK_C_VALUES[@]}"; do
@@ -46,8 +47,9 @@ elif [ "$CMD" = "idk" ]; then
   VAL_DATA="[${_val_list%,}]"
   REWARD_MANAGER=multi_thread_idk
   VALIDATION_DATA_DIR=$CHECKPOINT_DIR/qwen3_4b/validation_rollouts_idk
-  ADVANTAGE_ESTIMATOR=tailrl
-  EXPERIMENT_SUFFIX=idk_l0_eps1
+  # GracefulRL eps is hardcoded in verl/trainer/ppo/core_algos.py.
+  ADVANTAGE_ESTIMATOR=gracefulrl
+  EXPERIMENT_SUFFIX=idk_l02468_eps1
   LR=1e-6
 elif [ "$CMD" = "brier" ]; then
   TRAIN_DATA="['$DATA_DIR/data/dapo/brier/train.parquet']"

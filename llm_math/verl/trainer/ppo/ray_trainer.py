@@ -306,15 +306,15 @@ def compute_advantage(
         data.batch["advantages"] = advantages
         data.batch["returns"] = returns
 
-    elif adv_estimator == AdvantageEstimator.TAILRL:
-        # Initialize the mask for TailRL calculation
-        tailrl_calculation_mask = data.batch["response_mask"]
+    elif adv_estimator == AdvantageEstimator.GRACEFULRL:
+        # Initialize the mask for GracefulRL calculation
+        gracefulrl_calculation_mask = data.batch["response_mask"]
         if multi_turn:
-            response_length = tailrl_calculation_mask.size(1)
-            tailrl_calculation_mask = data.batch["loss_mask"][:, -response_length:]
-        advantages, returns = core_algos.compute_tailrl_outcome_advantage(
+            response_length = gracefulrl_calculation_mask.size(1)
+            gracefulrl_calculation_mask = data.batch["loss_mask"][:, -response_length:]
+        advantages, returns = core_algos.compute_gracefulrl_outcome_advantage(
             token_level_rewards=data.batch["token_level_rewards"],
-            response_mask=tailrl_calculation_mask,
+            response_mask=gracefulrl_calculation_mask,
             index=data.non_tensor_batch["uid"],
             norm_adv_by_std_in_grpo=norm_adv_by_std_in_grpo,
         )
@@ -490,7 +490,7 @@ class RayPPOTrainer:
             AdvantageEstimator.OVERSAMPLE_SUBSET_VR_WEIGHTS,
             AdvantageEstimator.CLIPPED_P_NORMALIZATION,
             AdvantageEstimator.ONESIDEDGRPO,
-            AdvantageEstimator.TAILRL
+            AdvantageEstimator.GRACEFULRL
         ]:
             self.use_critic = False
 
