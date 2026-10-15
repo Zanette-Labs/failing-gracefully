@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Runtime state is normally under /tmp, but ignore it if configured locally.
+cache/
+enroot/
+logs/
+models/
+ray*/
+tmp/
+wandb/
+work/
+active_job_id
+training.pid
+*.lock
+*.sqsh
+
+# Generated experiment data and outputs.
+*.jsonl
+*_summary.json
+server-*.log
+*.server.log
+*_manifest.json
+eval_outputs/

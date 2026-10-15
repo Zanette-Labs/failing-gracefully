@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="GracefulRL trains language models to preserve task-solving capability while learning to fall back when acting would be unreliable." />
+    <meta name="theme-color" content="#f8f5ef" />
+    <title>Training Language Models to Fail Gracefully</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;1,400&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./site.js" defer></script>
+    <script src="./simplex.js" type="module"></script>
+    <script src="./storyboard.js" type="module"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="page">
+      <aside class="outline" aria-label="Contents sidebar">
+        <a class="sidebar-brand" href="#main">Graceful<span class="brand-light">RL</span></a>
+        <p class="label">Contents</p>
+        <nav aria-label="Article contents">
+          <a href="#problem-title"><span class="num">1 </span><span class="ttl">Graceful Failure</span></a>
+          <a href="#reinforce-title"><span class="num">2 </span><span class="ttl">The Issue with the Policy Gradient</span></a>
+          <a href="#objective-title"><span class="num">3 </span><span class="ttl">The GracefulRL Objective</span></a>
+          <a href="#scaling-title"><span class="num">4 </span><span class="ttl">Scaling to Real Problems</span></a>
+          <a class="toc-subsection" href="#safemaze-title"><span class="num">4.1 </span><span class="ttl">SafeMaze</span></a>
+          <a class="toc-subsection" href="#llm-math-title"><span class="num">4.2 </span><span class="ttl">LLM Math</span></a>
+          <a class="toc-subsubsection" href="#decisions-title"><span class="num">4.2.1 </span><span class="ttl">Verbalizing Decisions</span></a>
+          <a class="toc-subsection" href="#minesweeper-title"><span class="num">4.3 </span><span class="ttl">Minesweeper</span></a>
+          <a href="#bibtex-title"><span class="num">5 </span><span class="ttl">Citation</span></a>
+        </nav>
+      </aside>
+      <main id="main">
+      <header class="publication-header">
+        <p class="label"><a href="https://github.com/Zanette-Labs" target="_blank" rel="noopener noreferrer">Zanette Labs</a><span aria-hidden="true"> / </span>Research</p>
+        <h1>Training Language Models to Fail Gracefully</h1>
+
+        <p class="authors">
+          <span><a href="https://daman1209arora.github.io/" target="_blank" rel="noopener noreferrer">Daman Arora</a><sup>1</sup>,</span>
+          <span><a href="https://xuechengliu.com/academic/" target="_blank" rel="noopener noreferrer">Xuecheng Liu</a><sup>1</sup>,</span>
+          <span><a href="https://himanshusingh.ai" target="_blank" rel="noopener noreferrer">Himanshu Gaurav Singh</a><sup>2</sup>,</span>
+          <span><a href="https://tajwarfahim.github.io/" target="_blank" rel="noopener noreferrer">Fahim Tajwar</a><sup>1</sup>,</span>
+          <span><a href="https://abitha-thankaraj.github.io" target="_blank" rel="noopener noreferrer">Abitha Thankaraj</a><sup>1</sup>,</span>
+          <span><a href="https://www.cs.cmu.edu/~rsalakhu/" target="_blank" rel="noopener noreferrer">Ruslan Salakhutdinov</a><sup>1</sup>,</span>
+          <span><a href="https://havenfeng.github.io/" target="_blank" rel="noopener noreferrer">Haiwen Feng</a><sup>2</sup>,</span>
+          <span><a href="https://yudasong.github.io/" target="_blank" rel="noopener noreferrer">Yuda Song</a><sup>1</sup>,</span>
+          <span><a href="https://azanette.com/" target="_blank" rel="noopener noreferrer">Andrea Zanette</a><sup>1</sup></span>
+        </p>
+
+        <p class="affiliations">
+          <span><sup>1</sup>Carnegie Mellon University</span>
+          <span><sup>2</sup>UC Berkeley</span>
+        </p>
+
+        <nav class="publication-links" aria-label="Paper and research resources">
+          <a href="https://arxiv.org/abs/2610.20401" target="_blank" rel="noopener noreferrer">Paper</a>
+          <a href="https://github.com/Zanette-Labs/failing-gracefully" target="_blank" rel="noopener noreferrer">Code</a>
+        </nav>
+      </header>
+      <figure class="teaser-animation">
+        <svg id="gracefulrl-storyboard" viewBox="0 0 1200 675" role="img" aria-labelledby="storyboard-title storyboard-description">
+          <title id="storyboard-title">GracefulRL: from optimization to reliable decisions</title>
+          <desc id="storyboard-description">REINFORCE and GracefulRL trajectories on a three-outcome simplex, followed by reliability frontiers measured on AIME at increasing training compute and contrasting model decisions.</desc>
+        </svg>
+        <div class="teaser-controls" hidden>
+          <button id="storyboard-play-pause" type="button" aria-controls="gracefulrl-storyboard" aria-label="Pause animation">Pause</button>
+        </div>
+        <noscript><img src="./assets/gracefulrl-overview-poster.png" width="1200" height="675" alt="GracefulRL optimization, reliability frontier measured on AIME, and example model decisions." /></noscript>
+      </figure>
+        <details class="contents-inline">
+          <summary>Explore the paper <span>Five sections</span></summary>
+          <nav aria-label="Article contents">
+          <a href="#problem-title"><span class="num">1 </span><span class="ttl">Graceful Failure</span></a>
+          <a href="#reinforce-title"><span class="num">2 </span><span class="ttl">The Issue with the Policy Gradient</span></a>
+          <a href="#objective-title"><span class="num">3 </span><span class="ttl">The GracefulRL Objective</span></a>
+          <a href="#scaling-title"><span class="num">4 </span><span class="ttl">Scaling to Real Problems</span></a>
+          <a class="toc-subsection" href="#safemaze-title"><span class="num">4.1 </span><span class="ttl">SafeMaze</span></a>
+          <a class="toc-subsection" href="#llm-math-title"><span class="num">4.2 </span><span class="ttl">LLM Math</span></a>
+          <a class="toc-subsubsection" href="#decisions-title"><span class="num">4.2.1 </span><span class="ttl">Verbalizing Decisions</span></a>
+          <a class="toc-subsection" href="#minesweeper-title"><span class="num">4.3 </span><span class="ttl">Minesweeper</span></a>
+          <a href="#bibtex-title"><span class="num">5 </span><span class="ttl">Citation</span></a>
+          </nav>
+        </details>
+
+      <section class="section" aria-labelledby="problem-title">
+        <h2 id="problem-title"><span class="num">1</span> Graceful Failure</h2>
+        <p>
+          Reinforcement learning with verifiable rewards (RLVR) makes language models better at
+          solving tasks: a correct solution earns a reward, and an incorrect one does not.
+          But what should a model do when a task is beyond its capabilities?
+          Under this objective, <strong>guessing is the rational choice</strong>. If success earns
+          1 and every other outcome earns 0, even a long-shot attempt has a higher expected reward
+          than admitting uncertainty. The model can be rewarded for trying its luck, even when it
+          cannot justify the answer.
+        </p>
+        <p>
+          This becomes costly when a poorly thought out action corrupts a database, ships broken code,
+          or misleads a user. We want a model to solve a task when it can, and to <em>fail gracefully</em>
+          when it cannot: acknowledge uncertainty, revert its changes, or return to a safe state.
+          That gives us three outcomes:
+        </p>
+        <p class="outcome-order" aria-label="Success is preferred to fallback, which is preferred to error">
+          Success <span aria-hidden="true">≻</span> Fallback <span aria-hidden="true">≻</span> Error
+        </p>
+        <p>
+          However, we find that Graceful Failure can be surprisingly difficult to learn. Keep reading further to see why that is the case! We do a deep dive into pathologies of the naive approach and show how to overcome them.
+        </p>
+      </section>
+
+      <section class="section" aria-labelledby="reinforce-title">
+        <h2 id="reinforce-title"><span class="num">2</span> The Issue with the Policy Gradient</h2>
+        <p>
+          A natural idea is to reward success with 1, fallback with an intermediate value
+          <i>c</i> ∈ (0, 1), and error with 0. Policy gradient uses a stochastic estimator for the gradient of the expected reward. At the population level, the objective is:
+        </p>
+        <div class="equation" role="region" aria-label="The policy-gradient objective is success probability plus c times fallback probability" tabindex="0"><math display="block" aria-label="The policy-gradient objective is success probability plus c times fallback probability"><msub><mi>𝒥</mi><mtext>PG</mtext></msub><mo>=</mo><msub><mi>p</mi><mi>S</mi></msub><mo>+</mo><mi>c</mi><msub><mi>p</mi><mi>F</mi></msub><mo>.</mo></math><span class="equation-number">(1)</span></div>
+        <p>Here <i>p</i><sub>S</sub> and <i>p</i><sub>F</sub> are the policy’s probabilities of Success and Fallback, respectively.
+          What happens if we actually train a model with this objective?
+        </p>
+        <figure id="training-reward-figure">
+          <div class="training-reward-grid panel">
+            <a class="figure-link" href="./assets/training-reward-safemaze.svg" aria-label="View the SafeMaze training-reward plot at full resolution" target="_blank" rel="noopener noreferrer">
+              <img src="./assets/training-reward-safemaze.svg" width="912" height="780" loading="lazy" decoding="async" alt="SafeMaze: RLOO training reward approaches 0.4 over 30 steps. Reward is derived from the paper's success and fallback curves." />
+            </a>
+            <a class="figure-link" href="./assets/training-reward-llm-math.svg" aria-label="View the LLM-Math training-reward plot at full resolution" target="_blank" rel="noopener noreferrer">
+              <img src="./assets/training-reward-llm-math.svg" width="912" height="780" loading="lazy" decoding="async" alt="LLM-Math: RLOO training reward rises to 0.4 and stays there through step 1,000, redrawn from the paper's reward curve." />
+            </a>
+            <a class="figure-link" href="./assets/training-reward-minesweeper.svg" aria-label="View the Minesweeper RLOO training-reward plot at full resolution" target="_blank" rel="noopener noreferrer">
+              <img src="./assets/training-reward-minesweeper.svg" width="912" height="780" loading="lazy" decoding="async" alt="Minesweeper RLOO training reward follows the supplied W&B screenshot, rescaled from a starting reward of 0.02 to a plateau of 0.4 by step 250." />
+            </a>
+          </div>
+          <figcaption><span class="fignum">Figure 1.</span> <strong>Rewarding fallback can lead to always falling back.</strong>
+            Matching axes show training reward approaching <i>c</i> = 0.4.
+            For all three experimental settings, the policy gradient can become trapped near fallback, even though success is possible.
+          </figcaption>
+        </figure>
+        <p>
+          The training reward rises, but then plateaus at the fallback reward. <strong>The policy learns to stop trying.</strong>
+          Why does training get stuck here? The objective expresses exactly the right preference, but it doesn't look like that it worked at all!<span class="inline-note"><input class="inline-note-toggle visually-hidden" type="checkbox" id="reward-note-toggle" aria-label="Note 1" aria-controls="reward-note-1" /><label class="inline-note-trigger" for="reward-note-toggle">[1]</label><span id="reward-note-1" class="inline-note-popup" role="note">This fallback-only collapse also occurs with GRPO. It can go the other way as well: the model never learns to fall back. We also try tuning the rewards, but that can fail in some settings. Generally, this approach is unappealing because it is unpredictable and difficult to tune.</span></span>
+        </p>
+        <p>
+          We show that as the policy becomes nearly deterministic, the gradient needed to recover successful behavior shrinks proportionally. In addition to this, there can be generalization effects which promotes uniform fallback behavior. Intuitively: once the policy learns to make less mistakes, it doesn't learn to succeed again, because even if the model can generate successful trajectories, the <strong>gradient is too weak.</strong> Formally,
+        </p>
+        <div class="theorem">
+          <p class="theorem-title">The policy gradient vanishes near saturation</p>
+          <div class="equation" role="region" aria-label="The policy-gradient norm is big O of one minus p o as the probability of any outcome o approaches one" tabindex="0"><div class="equation-parts"><math display="block" aria-label="The policy-gradient norm is big O of one minus p o"><mo>∥</mo><msub><mo>∇</mo><mi>θ</mi></msub><msub><mi>𝒥</mi><mtext>PG</mtext></msub><mo>∥</mo><mo>=</mo><mi mathvariant="normal">O</mi><mo>(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mi>o</mi></msub><mo>)</mo></math><math display="block" aria-label="As the outcome probability approaches one"><mtext>as</mtext><mspace width=".4em"/><msub><mi>p</mi><mi>o</mi></msub><mo>→</mo><mn>1</mn><mo>.</mo></math></div><span class="equation-number">(2)</span></div>
+          <p>Under a finite-horizon softmax policy with bounded logit gradients, this bound holds as the policy concentrates on any outcome <i>o</i> ∈ {Success, Fallback, Error}; <i>p</i><sub>o</sub> is the probability of that outcome.</p>
+        </div>
+
+      </section>
+
+      <section class="section" aria-labelledby="objective-title">
+        <h2 id="objective-title"><span class="num">3</span> The GracefulRL Objective</h2>
+        <p>
+          This motivates a surrogate objective that prevents the gradient from vanishing near
+          a fallback-only policy, so the model can still move toward success.
+          GracefulRL changes the optimization landscape by maximizing the log-probabilities of two
+          desirable events: <strong>success</strong> and <strong>avoiding error</strong>.
+        </p>
+        <div class="equation" role="region" aria-label="GracefulRL maximizes one minus c times log p S plus c times log of one minus p E" tabindex="0"><div class="equation-parts"><math display="block" aria-label="GracefulRL maximizes one minus c times log p S plus c times log of one minus p E"><msub><mi>𝒥</mi><mtext>GracefulRL</mtext></msub><mo>=</mo></math><math display="block" aria-label="One minus c times log success probability plus c times log non-error probability"><mo>(</mo><mn>1</mn><mo>−</mo><mi>c</mi><mo>)</mo><mspace width=".22em"/><mi mathvariant="normal">log</mi><msub><mi>p</mi><mi>S</mi></msub><mo>+</mo><mi>c</mi><mspace width=".22em"/><mi mathvariant="normal">log</mi><mo>(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mi>E</mi></msub><mo>)</mo><mo>.</mo></math></div><span class="equation-number">(3)</span></div>
+        <p>
+          The first logarithm creates a barrier against losing all probability of success
+          (<i>p</i><sub>S</sub> → 0). The second creates a barrier against concentrating all
+          probability on error (<i>p</i><sub>E</sub> → 1). Together, they keep pressure on the
+          model to solve the task while favoring fallback over harmful mistakes.<span class="inline-note"><input class="inline-note-toggle visually-hidden" type="checkbox" id="estimator-note-toggle" aria-label="Note 2" aria-controls="estimator-note-2" /><label class="inline-note-trigger" for="estimator-note-toggle">[2]</label><span id="estimator-note-2" class="inline-note-popup" role="note">An unbiased estimator of the exact log-objective gradient is unavailable from a fixed, finite batch of rollouts. Following MaxRL and TailRL, we use a finite-rollout truncation. In addition, we introduce a smoothing trick to control for variance at the cost of some bias. Take a look at the paper for a concrete implementation</span></span>
+        </p>
+        <div class="theorem">
+          <p class="theorem-title">The GracefulRL gradient remains nonzero near suboptimal saturation</p>
+          <div class="equation" role="region" aria-label="The GracefulRL population-gradient norm is Theta one as fallback or error probability approaches one" tabindex="0"><div class="equation-parts"><math display="block" aria-label="The GracefulRL population-gradient norm is Theta one as fallback or error probability approaches one"><mo>∥</mo><msub><mo>∇</mo><mi>θ</mi></msub><msub><mi>𝒥</mi><mtext>GracefulRL</mtext></msub><mo>∥</mo><mo>=</mo><mi mathvariant="normal">Θ</mi><mo>(</mo><mn>1</mn><mo>)</mo></math><math display="block" aria-label="As fallback or error probability approaches one"><mtext>as</mtext><mspace width=".4em"/><msub><mi>p</mi><mi>o</mi></msub><mo>→</mo><mn>1</mn><mo>,</mo></math></div><span class="equation-number">(4)</span></div>
+          <p>
+            for <i>o</i> ∈ {Fallback, Error}, with fixed 0 &lt; <i>c</i> &lt; 1.
+            This uses the boundedness conditions above and a non-degeneracy condition.
+          </p>
+        </div>
+        <p>
+          The animation below illustrates the difference on a
+          three-outcome softmax policy and captures the core argument of the work.
+        </p>
+
+        <figure id="simplex-figure">
+          <div id="simplex-demo" class="panel simplex-demo">
+            <div class="simplex-fallback">
+              <img src="./assets/optimization.png" width="2200" height="741" loading="lazy" decoding="async" alt="Static illustration from the paper: REINFORCE can become trapped near fallback, while GracefulRL trajectories move toward success." />
+            </div>
+            <div class="simplex-interactive" hidden>
+              <div class="simplex-heading">
+                <p class="panel-title">Same starting policies. Different optimization dynamics.</p>
+                <p class="simulation-setup">REINFORCE can be “sticky” near <i>p</i><sub>E</sub> → 1 and <i>p</i><sub>F</sub> → 1; GracefulRL avoids this.</p>
+              </div>
+              <div class="animation-controls">
+                <button type="button" id="simplex-play" aria-label="Play simplex animation">Play</button>
+                <button type="button" id="simplex-restart" aria-label="Replay simplex animation from step zero">Replay</button>
+                <div class="timeline">
+                  <label for="simplex-step">Optimization step <output id="simplex-step-value" for="simplex-step">0 / 100</output></label>
+                  <input id="simplex-step" type="range" min="0" max="100" step="1" value="0" aria-valuetext="Step 0 of 100" />
+                </div>
+              </div>
+              <div class="simplex-grid">
+                <div class="simplex-method" data-method="reinforce">
+                  <p class="method-label reinforce-color">REINFORCE</p>
+                  <svg viewBox="0 0 360 330" class="simplex-plot" role="img" aria-label="REINFORCE probability simplex: optimization trajectories from seven initial policies"></svg>
+                  <p class="simplex-metrics"></p>
+                </div>
+                <div class="simplex-method" data-method="graceful">
+                  <p class="method-label graceful-color">GracefulRL</p>
+                  <svg viewBox="0 0 360 330" class="simplex-plot" role="img" aria-label="GracefulRL probability simplex: optimization trajectories from the same seven initial policies"></svg>
+                  <p class="simplex-metrics"></p>
+                </div>
+              </div>
+              <div class="animation-legend"><span><i class="initial-marker"></i> Initial policy</span><span><i class="current-marker"></i> Current policy</span></div>
+            </div>
+          </div>
+          <figcaption><span class="fignum">Figure 2.</span> <strong>Optimization dynamics on the outcome simplex.</strong>
+            Each point is a policy (<i>p</i><sub>S</sub>, <i>p</i><sub>F</sub>, <i>p</i><sub>E</sub>). We sample 32 actions from the policy and compute the gradient for both objectives.
+            The animation shows the first 100 optimization steps at <i>c</i> = 0.6 using SGD with step size 0.1.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="section" aria-labelledby="scaling-title">
+        <h2 id="scaling-title"><span class="num">4</span> Scaling to Real Problems</h2>
+        <p>
+          We now ask whether this simple change to the optimization objective can lead to
+          graceful failure on real tasks, where deep networks and generalization effects come into play.
+        </p>
+        <h3 id="safemaze-title">SafeMaze: learning an actual fallback policy</h3>
+        <p>
+          In SafeMaze, an agent navigates a maze with two possible destinations: a goal and a
+          designated safe square. The goal is always reachable and the agent has 50 steps
+          to get there. The safe square has an always-clear path from the start, while hitting a
+          wall or running out of steps counts as an error.
+          This makes graceful failure an interesting navigation problem: <strong>the agent must decide
+          whether to keep pursuing the harder goal or return to safety</strong>, then carry out that
+          decision through a sequence of actions. GracefulRL outperforms the baselines by a
+          substantial margin, achieving higher success at lower error rates.
+        </p>
+        <p>
+          We welcome readers to try auto-research agents on this task and see if they can
+          improve the success–error tradeoff! This setup is relatively light on compute requirements.
+        </p>
+        <figure>
+          <div class="figure-pair maze-results panel">
+            <div>
+              <p class="panel-title">Goal or safe return</p>
+              <a class="figure-link" href="./assets/maze-environment.png" aria-label="View the SafeMaze environment at full resolution" target="_blank" rel="noopener noreferrer">
+                <img src="./assets/maze-environment.png" width="680" height="770" loading="lazy" decoding="async" alt="SafeMaze board with agent, goal, and a safe square; the orange path illustrates a route to safety." />
+              </a>
+            </div>
+            <div>
+              <p class="panel-title">Reliability frontier</p>
+              <a class="figure-link" href="./assets/maze-frontier.png" aria-label="View the SafeMaze reliability frontier at full resolution" target="_blank" rel="noopener noreferrer">
+                <img src="./assets/maze-frontier.png" width="913" height="770" loading="lazy" decoding="async" alt="GracefulRL has a higher success rate and lower error rate than DPG and online reward tuning across three seeds." />
+              </a>
+            </div>
+          </div>
+          <figcaption><span class="fignum">Figure 3.</span> <strong>SafeMaze: reaching the goal or returning to safety.</strong>
+            Left: the goal requires navigating the maze, while a clear path leads to the safe square.
+            Right: GracefulRL achieves higher success at lower error rates than the baselines across three seeds.
+          </figcaption>
+        </figure>
+
+        <h3 id="llm-math-title">LLM Math: solving when possible, abstaining when necessary</h3>
+        <p>
+          Mathematical reasoning tests two abilities at once: solving a problem and recognizing
+          whether the reasoning supports a final answer. Guessing when stuck can turn uncertainty
+          into a confident error, while abstaining too often gives up useful solutions. The model
+          must learn where that boundary lies as its capabilities improve, especially when users
+          cannot check every answer themselves.
+        </p>
+        <p>
+          We train 1.7B and 4B Qwen3 models on DAPO-Math-17K with prompts specifying different
+          caution levels. Varying the prompt at test time traces a success–error frontier on
+          held-out math benchmarks. GracefulRL achieves a better frontier than RLCR with
+          confidence thresholding.<span class="inline-note"><input class="inline-note-toggle visually-hidden" type="checkbox" id="rlcr-note-toggle" aria-label="Note 3" aria-controls="rlcr-note-3" /><label class="inline-note-trigger" for="rlcr-note-toggle">[3]</label><span id="rlcr-note-3" class="inline-note-popup" role="note">We also tried reward tuning. The 1.7B model collapses to a policy that never abstains after about 260 steps; the 4B model does the same after about 850 steps. 😢</span></span>
+        </p>
+        <figure>
+          <div class="figure-pair panel">
+            <div>
+              <p class="panel-title">Qwen3-1.7B-Base</p>
+              <a class="figure-link" href="./assets/math-frontier-1-7b.png" aria-label="View the Qwen3-1.7B reliability frontier at full resolution" target="_blank" rel="noopener noreferrer">
+                <img src="./assets/math-frontier-1-7b.png" width="900" height="688" loading="lazy" decoding="async" alt="Qwen3-1.7B-Base: GracefulRL achieves higher success rates at lower error rates than RLCR with thresholding." />
+              </a>
+            </div>
+            <div>
+              <p class="panel-title">Qwen3-4B-Base</p>
+              <a class="figure-link" href="./assets/math-frontier-4b.png" aria-label="View the Qwen3-4B reliability frontier at full resolution" target="_blank" rel="noopener noreferrer">
+                <img src="./assets/math-frontier-4b.png" width="900" height="688" loading="lazy" decoding="async" alt="Qwen3-4B-Base: GracefulRL achieves higher success rates at lower error rates than RLCR with thresholding." />
+              </a>
+            </div>
+          </div>
+          <figcaption><span class="fignum">Figure 4.</span> <strong>Better success–error tradeoffs at both model sizes.</strong>
+            Evaluated on MATH500, AIME 2024–2026, AMC 2022–2024, and JEEBench (numeric).
+            Higher and further left is better. Graceful Pareto-dominates the RLCR+Thresholding baseline.<span class="inline-note"><input class="inline-note-toggle visually-hidden" type="checkbox" id="rlcr-calibration-note-toggle" aria-label="Note 4" aria-controls="rlcr-calibration-note-4" /><label class="inline-note-trigger" for="rlcr-calibration-note-toggle">[4]</label><span id="rlcr-calibration-note-4" class="inline-note-popup" role="note">We observe that extended training for correctness and calibration can make the model trade correctness for better calibration, reducing answer accuracy. See more results in the paper.</span></span>
+          </figcaption>
+        </figure>
+        <figure class="aime-training-figure">
+          <div class="panel">
+            <div class="aime-training-scroll" role="region" aria-label="AIME training curves across caution levels" tabindex="0">
+              <img src="./assets/aime-training-by-c.png" width="2338" height="888" loading="lazy" decoding="async" alt="Qwen3-4B-Base on AIME: success rises during training at all five caution levels, while higher caution sharply lowers error rates. The dashed MaxRL baseline retains a high error rate." />
+            </div>
+            <p class="chart-scroll-hint">Swipe to see both plots →</p>
+          </div>
+          <figcaption><span class="fignum">Figure 5.</span> <strong>AIME performance across training checkpoints.</strong>
+            Qwen3-4B-Base is evaluated at five values of <i>c</i>: success improves
+            over training, while higher caution substantially reduces error. Specialization for different caution-indexed prompts occurs around step 200.
+          </figcaption>
+        </figure>
+        <figure class="compute-frontier-figure">
+          <div class="panel">
+            <img src="./assets/aime-compute-frontiers.png" width="1499" height="1141" loading="lazy" decoding="async" alt="Qwen3-4B-Base AIME reliability frontiers after 200, 400, and 800 training steps; success rises at comparable error rates as training compute increases." />
+          </div>
+          <figcaption><span class="fignum">Figure 6.</span> <strong>More training compute improves the reliability frontier.</strong>
+            Qwen3-4B-Base after 200, 400, and 800 steps (1×, 2×, and 4× compute). Each point represents a different caution level.<span class="inline-note"><input class="inline-note-toggle visually-hidden" type="checkbox" id="reliability-note-toggle" aria-label="Note 5" aria-controls="reliability-note-5" /><label class="inline-note-trigger" for="reliability-note-toggle">[5]</label><span id="reliability-note-5" class="inline-note-popup" role="note">Can we get even closer to zero error? Can we establish scaling laws for reliability? These questions need deeper investigation and are left for future work.</span></span>
+          </figcaption>
+        </figure>
+        <p class="experiment-links">
+          <a href="https://github.com/Zanette-Labs/failing-gracefully/tree/main/llm_math" target="_blank" rel="noopener noreferrer">Training code →</a>
+          <a href="https://huggingface.co/collections/daman1209arora/graceful-failure-llm" target="_blank" rel="noopener noreferrer">Model checkpoints →</a>
+        </p>
+
+        <h4 id="decisions-title">Verbalizing decisions</h4>
+        <p>
+          We were surprised to see coherent verbalizations behind the models’ decisions in
+          their chain-of-thought (CoT). Some examples include the model mentioning a time limit,
+          a missing technique, or a possible mistake before choosing to abstain. These explanations
+          emerge <strong>purely from outcome-level RL</strong>, without annotations identifying when the model
+          should fall back!
+        </p>
+        <p>
+          We also find <strong>explicit guessing</strong> in a model trained with just correctness based RL.
+          We train a 4B model with no reward for abstention using a neutral
+          prompt contains no cues to guess or to be cautious, yet its CoT mentions “I’ll guess” when
+          it runs out of a reliable path to an answer. The excerpts below show the contrast.
+        </p>
+        <figure class="cot-figure">
+          <div class="cot-columns">
+            <div class="cot-column cot-maxrl">
+              <p class="cot-column-title">MaxRL (RLVR) incentivizes guessing</p>
+              <article class="cot-entry">
+                <blockquote><strong>Square partition.</strong> “This seems complicated. Maybe <i>P</i> is at (½, ½), the center, but that gives 8 triangles, not 10. … Given the equality of areas, perhaps <i>P</i> must satisfy specific equations. … Given the time constraints, <span class="cot-emphasis">I’ll guess <span class="cot-boxed">1</span>.</span>”</blockquote>
+              </article>
+              <article class="cot-entry">
+                <blockquote><strong>Balance weights.</strong> “Place 1 on <i>L</i>, 2 on <i>L</i>: valid. … Alternatively, perhaps 2 valid sequences. Not sure. This is speculative. Maybe the answer is <i>C</i><sub>n</sub>. Given the problem’s structure, <span class="cot-emphasis">I’ll guess the answer is <i>C</i><sub>n</sub>.</span>”</blockquote>
+              </article>
+              <article class="cot-entry">
+                <blockquote><strong>Sine roots.</strong> “Alternatively, perhaps the minimum is 1, since the function is not identically zero and is continuous. But in the example, we had more than 1 root. Maybe the answer is 2. … In the example, this gave 2, but we had 5. Not matching. … Given the ambiguity, and the problem’s likely intent, <span class="cot-emphasis">I’ll guess <span class="cot-boxed">2</span>.</span>”</blockquote>
+              </article>
+            </div>
+            <div class="cot-column cot-graceful">
+              <p class="cot-column-title">GracefulRL acknowledges limitations</p>
+              <article class="cot-entry">
+                <blockquote><strong>Coin counting.</strong> “Given the complexity and the need for a precise count, I’m not entirely confident in solving this problem manually within the time allowed. I might need more advanced mathematical tools or a computational approach to find the exact number. Therefore, I’ll output:” <span class="cot-boxed">I don’t know</span></blockquote>
+              </article>
+              <article class="cot-entry">
+                <blockquote><strong>Hexagon.</strong> “I might need more advanced geometric techniques or specific theorems that I’m not currently recalling. I’m not confident in solving this problem at this moment.” <span class="cot-boxed">I don’t know</span></blockquote>
+              </article>
+              <article class="cot-entry">
+                <blockquote><strong>Urn.</strong> “This discrepancy indicates that I might have made a mistake in the derivation or that the problem requires a different method. Given the complexity and the time invested, I’m not confident in solving this problem at the moment.” <span class="cot-boxed">I don’t know</span></blockquote>
+              </article>
+            </div>
+          </div>
+          <figcaption><span class="fignum">Figure 7.</span> <strong>Different behaviors under uncertainty.</strong>
+            A model trained just for correctness explicitly guesses when it is unsure; in contrast GracefulRL verbalizes its limitations and abstains.
+          </figcaption>
+        </figure>
+
+        <h3 id="minesweeper-title">Minesweeper: Graceful Failure Can (Sometimes) Improve Task Performance</h3>
+        <p>
+          In Minesweeper, the model sees a grid of hidden mines and revealed numbered cells,
+          then chooses a cell to reveal on each turn. <strong>Error</strong> means revealing a
+          mine, which ends the game immediately. <strong>Success</strong> means revealing every
+          non-mine cell within the turn budget. <strong>Fallback</strong> means reaching that
+          limit without hitting a mine, even though some non-mine cells remain unrevealed.
+        </p>
+        <p>
+          Each move is irreversible, so the model must weigh the chance of finishing the board
+          against the risk of hitting a mine. Here, learning to fall back safely can improve
+          success as well as reduce errors.
+        </p>
+        <p>
+          We train Qwen3-4B-Instruct-2507 with an eight-turn budget and evaluate on 500 held-out
+          puzzles with a twelve-turn budget. With <i>c</i> = 0.5, GracefulRL raises success
+          from <strong>67.4% to 77.4%</strong> and reduces error from <strong>17.0% to 6.0%</strong>.
+        </p>
+            <figure>
+              <div class="minesweeper-results panel">
+                <div>
+                  <div class="table-scroll" role="region" aria-label="Minesweeper success and error rates" tabindex="0">
+                    <table>
+                      <thead>
+                        <tr><th scope="col">Method</th><th scope="col"><i>c</i></th><th scope="col">Success ↑</th><th scope="col">Error ↓</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><td>MaxRL</td><td>0</td><td>67.4%</td><td>17.0%</td></tr>
+                        <tr><td>GracefulRL</td><td>0.25</td><td>66.0%</td><td>13.4%</td></tr>
+                        <tr class="featured-result"><td><strong>GracefulRL</strong></td><td>0.5</td><td><strong>77.4%</strong></td><td><strong>6.0%</strong></td></tr>
+                        <tr><td>GracefulRL</td><td>0.75</td><td>73.6%</td><td><strong>5.6%</strong></td></tr>
+                        <tr><td>RLOO</td><td>0.5</td><td>0.0%<sup>†</sup></td><td>0.0%<sup>†</sup></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="table-note">† RLOO collapses to always taking the fallback action.</p>
+                </div>
+                <a class="figure-link" href="./assets/minesweeper-errors.png" aria-label="View error probability by turn at full resolution" target="_blank" rel="noopener noreferrer">
+                  <img src="./assets/minesweeper-errors.png" width="2200" height="1547" loading="lazy" decoding="async" alt="Error probability rises late in the game for MaxRL with c = 0; GracefulRL with c = 0.5 keeps errors lower, including on the final turn." />
+                </a>
+              </div>
+              <figcaption>
+              <span class="fignum">Figure 8.</span> <strong>Minesweeper results.</strong> At <i>c</i> = 0.5, GracefulRL improves
+                success from 67.4% to 77.4% while reducing error from 17.0% to 6.0%.
+                Errors remain lower near the end of the episode.
+              </figcaption>
+            </figure>
+        <p>
+          An RL objective that rewards only success creates a <strong>gambling incentive</strong>
+          late in the game: a safe move that
+          ends in fallback earns no reward, while a risky move still has some chance of
+          completing the board. Its errors rise near the turn limit. GracefulRL retains an
+          incentive to preserve a safe state, including on the final turn. We hypothesize
+          that learning this fallback steers the policy toward safer board states from which
+          success is more accessible.
+        </p>
+        <p class="experiment-links">
+          <a href="https://github.com/Zanette-Labs/failing-gracefully/tree/main/minesweeper" target="_blank" rel="noopener noreferrer">Training and evaluation code →</a>
+          <a href="https://huggingface.co/collections/daman1209arora/graceful-failure-minesweeper" target="_blank" rel="noopener noreferrer">Model checkpoints →</a>
+        </p>
+      </section>
+
+      <section class="section citation-section" aria-labelledby="bibtex-title">
+        <div class="container">
+          <h2 id="bibtex-title"><span class="num">5</span> Citation</h2>
+          <div class="cite-box">
+            <button class="cite-copy" type="button" data-copy="bibtex" hidden>Copy</button>
+          <pre class="citation"><code id="bibtex">@misc{arora2026traininglanguagemodelsfail,
+      title={Training Language Models to Fail Gracefully},
+      author={Daman Arora and Xuecheng Liu and Himanshu Gaurav Singh and Fahim Tajwar and Abitha Thankaraj and Ruslan Salakhutdinov and Haiwen Feng and Yuda Song and Andrea Zanette},
+      year={2026},
+      eprint={2610.20401},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2610.20401},
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+        <footer>
+          <p><a href="#main">Back to top ↑</a></p>
+          <p>Research from <a href="https://github.com/Zanette-Labs" target="_blank" rel="noopener noreferrer">Zanette Labs</a>.</p>
+        </footer>
+      </main>
+    </div>
+    <p class="visually-hidden" id="copy-status" role="status" aria-live="polite"></p>
+  </body>
+</html>
